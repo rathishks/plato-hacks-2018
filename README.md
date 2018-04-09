@@ -14,4 +14,11 @@ Problems:
 - "Najkraci" (5.4): https://open.kattis.com/problems/najkraci
 - "Jez" (7.1): https://open.kattis.com/problems/jez
 
+To run the solution:
+
+    cd solutions/
+    
+    javac [filename].java
+    java [filename]
+
 All code is available under MIT license.
