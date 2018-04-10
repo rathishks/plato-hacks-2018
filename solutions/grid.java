@@ -15,7 +15,6 @@ public class grid {
             t = n * m;
 
         List<List<Integer>> adjacencyList = new ArrayList<>();
-        List<Integer> weights = new ArrayList<>();
 
         for (int i = 0; i < t; i++) {
             adjacencyList.add(new ArrayList<>());
@@ -49,10 +48,7 @@ public class grid {
     }
 
     private static void initGraph(List<List<Integer>> adjacencyList, Scanner s, int m, int n) {
-        int counter = 0;
-
-        for (int i = 0; i < n; i++)
-        {
+        for (int i = 0; i < n; i++) {
             char[] chars = s.next().toCharArray();
             int[] line = new int[chars.length];
 
@@ -60,18 +56,15 @@ public class grid {
                 line[k] = chars[k] - '0';
             }
             
-            for (int j = 0; j < m; j++)
-            {
+            for (int j = 0; j < m; j++) {
                 int ti = i * m + j, tj = -1;
 
                 int x = line[j];
 
-                if (x > 0)
-                {
+                if (x > 0) {
                     tj = j - x;
 
-                    if (tj >= 0)
-                    {
+                    if (tj >= 0) {
                         tj = i * m + tj;
 
                         adjacencyList.get(ti).add(tj);
@@ -79,8 +72,7 @@ public class grid {
 
                     tj = j + x;
 
-                    if (tj < m)
-                    {
+                    if (tj < m) {
                         tj = i * m + tj;
 
                         adjacencyList.get(ti).add(tj);
@@ -88,8 +80,7 @@ public class grid {
 
                     tj = i - x;
 
-                    if (tj >= 0)
-                    {
+                    if (tj >= 0) {
                         tj = tj * m + j;
 
                         adjacencyList.get(ti).add(tj);
@@ -97,15 +88,12 @@ public class grid {
 
                     tj = i + x;
 
-                    if (tj < n)
-                    {
+                    if (tj < n) {
                         tj = tj * m + j;
 
                         adjacencyList.get(ti).add(tj);
                     }
                 }
-
-                counter++;
             }
         }
     }
@@ -120,25 +108,21 @@ public class grid {
         
         queue.add(start);
 
-        for (int i = 0; i < n; i++)
-        {
+        for (int i = 0; i < n; i++) {
             distance[i] = infinity;
             previous[i] = -1;
         }
 
         distance[start] = 0;
 
-        while (queue.size() > 0)
-        {
+        while (queue.size() > 0) {
             int u = queue.remove();
 
-            for (int i = 0; i < adjacencyList.get(u).size(); i++)
-            {
+            for (int i = 0; i < adjacencyList.get(u).size(); i++) {
                 int v = adjacencyList.get(u).get(i);
                 int newDistance = distance[u] + 1;
 
-                if (distance[v] > newDistance)
-                {
+                if (distance[v] > newDistance) {
                     distance[v] = newDistance;
                     previous[v] = u;
 
