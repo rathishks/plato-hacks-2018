@@ -1,146 +1,131 @@
-import java.util.*;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.*;
 
 /*
  * https://open.kattis.com/problems/calculator
  */
 
-enum TokenType {
-    NUMBER,
-    OPERATOR,
-    PAREN
-}
+public class calculator {
+    private static Map<Character, Integer> operatorPriority;
+    private static List<String> parsed = new ArrayList<String>();
 
-class Token {
-    public TokenType tokenType;
-    public String value;
+    static {
+        operatorPriority = new HashMap<Character, Integer>();
 
-    public Token(TokenType tokenType, String value) {
-        this.tokenType = tokenType;
-        this.value = value;
-    }
-}
-
-class Tokenizer {
-    int i;
-    char[] chars;
-    Token previousToken;
-    
-    public Tokenizer(String input) {
-        chars = sanitize(input).toCharArray();    
+        operatorPriority.put('-', 0);
+        operatorPriority.put('+', 0);
+        operatorPriority.put('*', 1);
+        operatorPriority.put('/', 1);
+        operatorPriority.put('#', 2);
     }
 
-    private String sanitize(String input) {
-        String ret = input;
+    private static boolean equalOperators(Character op1, Character op2) {
+        if (!operatorPriority.containsKey(op1) || !operatorPriority.containsKey(op2)) {
+            return false;
+        }
 
-        ret = ret.replaceAll("\\s", "");
-        ret = ret.replaceAll("--", "+");
-        ret = ret.replaceAll("(\\d)(\\*|/)(\\d)", "($1$2$3)");
-        
-        return ret;
+        return operatorPriority.get(op1) <= operatorPriority.get(op2);
     }
 
-    public Token nextToken() {
-        Token ret = null;
+    private static void parse(String input) {
+        Stack<Character> stack = new Stack<Character>();
 
-        if (i < chars.length) {
-            char first = chars[i];
-            
-            if (Character.isDigit(first) || (
-                first == '-' && 
-                previousToken != null && 
-                previousToken.tokenType == TokenType.OPERATOR
-            )) {
-                i++;
+        char p = '\0';
+        int skip = -1;
 
-                StringBuilder sb = new StringBuilder();
+        char[] chars = input.replaceAll("\\s", "").trim().toCharArray();
 
-                while (i < chars.length && Character.isDigit(chars[i])) {
-                    sb.append(chars[i++]);
+        parsed.clear();
+
+        for (int i = 0; i < chars.length; i++) {
+            if (i >= skip) {
+                char ch = chars[i];
+
+                if (ch == '-' && (operatorPriority.containsKey(p) || p == '(' || p == '\0')) {
+                    stack.push('#');
+                } else if (operatorPriority.containsKey(ch)) {
+                    while (!stack.isEmpty() && equalOperators(ch, stack.peek())) {
+                        parsed.add(Character.toString(stack.pop()));
+                    }
+
+                    stack.push(ch);
+                } else if (ch == '(') {
+                    stack.push(ch);
+                } else if (ch == ')') {
+                    while (!stack.isEmpty() && stack.peek() != '(') {
+                        parsed.add(Character.toString(stack.pop()));
+                    }
+
+                    stack.pop();
+                } else {
+                    StringBuilder sb = new StringBuilder();
+
+                    sb.append(ch);
+
+                    for (int j = i + 1; j < chars.length; j++) {
+                        if (Character.isDigit(chars[j])) {
+                            sb.append(chars[j]);
+                            skip = j + 1;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    parsed.add(sb.toString());
                 }
 
-                ret = new Token(
-                    TokenType.NUMBER, 
-                    sb.insert(0, first).toString()
-                );
+                p = ch;
+            }
+        }
+
+        while (!stack.isEmpty()) {
+            parsed.add(Character.toString(stack.pop()));
+        }
+    }
+
+    private static double evaluate() {
+        Stack<Double> stack = new Stack<Double>();
+
+        for (String seq : parsed) {
+            if (Character.isDigit(seq.charAt(0))) {
+                stack.push(Double.parseDouble(seq));
+            } else if (seq.charAt(0) == '#') {
+                stack.push(-1 * stack.pop());
             } else {
-                i++;
+                Double one = stack.pop(), two = stack.pop();
 
-                ret = new Token(
-                    first == '(' || first == ')' ? 
-                        TokenType.PAREN :
-                        TokenType.OPERATOR, 
-                    Character.toString(first)
-                );
+                if (seq.charAt(0) == '-') {
+                    stack.push(two - one);
+                } else if (seq.charAt(0) == '+') {
+                    stack.push(one + two);
+                } else if (seq.charAt(0) == '*') {
+                    stack.push(two * one);
+                } else if (seq.charAt(0) == '/') {
+                    stack.push(two / one);
+                }
             }
         }
 
-        previousToken = ret;
-
-        return ret;
-    }
-}
-
-class Evaluator {
-    public double evaluate(String input) {
-        return eval(new Tokenizer(input), 0D);
+        return stack.pop();
     }
 
-    private double eval(Tokenizer tokenizer, double result) {
-        while (true) {
-            Token token = tokenizer.nextToken();
-
-            if (token == null) {
-                break;
-            }
-
-            switch (token.tokenType) {
-                case NUMBER:
-                    result = Double.parseDouble(token.value);
-                case OPERATOR:
-                    double left = result, right = 0D;
-
-                    Token nextToken = tokenizer.nextToken();
-
-                    if (nextToken.tokenType == TokenType.PAREN) {
-                        right = eval(tokenizer, result);
-                        tokenizer.nextToken();
-                    } else {
-                        right = Double.parseDouble(nextToken.value);
-                    }
-
-                    if (token.value == "+") {
-                        result = left + right;
-                    } else if (token.value == "-") {
-                        result = left - right;
-                    } else if (token.value == "*") {
-                        result = left * right;
-                    } else if (token.value == "/") {
-                        result = left / right;
-                    }
-                case PAREN:
-                    result = eval(tokenizer, result);
-                    tokenizer.nextToken();
-            }
-        }
-
-        return result;
-    }
-}
-
-public class calculator {
     public static void main(String[] args) {
         Scanner s = new Scanner(System.in);
-        
-        while (true) {
+
+        DecimalFormat formatter = new DecimalFormat("0.00");
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+
+        symbols.setDecimalSeparator('.');
+        formatter.setDecimalFormatSymbols(symbols);
+
+        while (s.hasNext()) {
             String input = s.nextLine();
 
-            if (input == null) {
-                break;
-            }
+            parse(input);
+            double result = evaluate();
 
-            double result = new Evaluator().evaluate(input);
-            System.out.println(new DecimalFormat("#.00").format(result));
+            System.out.println(formatter.format(result));
         }
 
         s.close();
